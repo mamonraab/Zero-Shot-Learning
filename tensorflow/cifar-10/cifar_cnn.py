@@ -1,3 +1,9 @@
+''' CIFAR-10 dataset 
+training examples = 50000 images
+test examples = 10000 images
+Examples of each class = 6000 images
+'''
+
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function 
@@ -10,7 +16,7 @@ import argparse
 import sys
 
 batch_size = 100
-max_steps = 5000
+max_steps = 10000
 
 def convolve(X, weights):
 	return tf.nn.conv2d(X, weights, strides = [1,1,1,1], padding = 'SAME')
@@ -98,7 +104,7 @@ def main(_):
 					keep_prob:0.5
 					})
 				print ('Step:%i , Accuracy:%g'%(i, train_accuracy))
-			sess.run(train, feed_dict={x_input1:images_batch, y_output:labels_batch, keep_prob:0.5})
+			sess.run(train,feed_dict={x_input1:images_batch, y_output:labels_batch, keep_prob:0.5})
 
 		test_accuracy = sess.run(accuracy, feed_dict={
 			x_input1: x_test,
@@ -107,6 +113,7 @@ def main(_):
 			})
 		print ('Test Accuracy : %g'%test_accuracy)
 	end_time = time.time()
+	print ('Time Taken :%g'%(end_time - start_time))
 
 
 if __name__ == '__main__':
@@ -116,4 +123,3 @@ if __name__ == '__main__':
   	FLAGS, unparsed = parser.parse_known_args()
   	start_time = time.time()
 	tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)
-	print ('Time Taken :%g'%(end_time - start_time))

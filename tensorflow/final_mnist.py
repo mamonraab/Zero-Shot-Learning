@@ -1,3 +1,8 @@
+# The future statements are present to ensure compatibility with both python 2 and python 3
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import tensorflow as tf 
 import numpy as np
 import argparse
@@ -76,7 +81,11 @@ def main(_):
 	sess = tf.InteractiveSession()
 	tf.global_variables_initializer().run()
 
-	for i in range(20000):
+	# with n_iterations=20000 => accuracy=98.9 % and with n_iterations=1000 => accuracy=94.05%
+	for i in range(1000):
+		# the batch size is the number of training examples your model will use for one update 
+		# to the model parameters. Ideally you would use all the training examples to calculate
+		# the gradients for every single update, but that is not efficient. 
 		batch = mnist.train.next_batch(50)
 		if i%100 == 0:
 			# keep_prob - the probability for a particular activation unit in hidden layer
