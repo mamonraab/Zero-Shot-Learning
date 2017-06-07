@@ -32,6 +32,17 @@ def main(_):
 	attributes = dataset['attributes']     	# [50, 300]
 	n_totalExamples = len(datasetlabels)
 
+	# Normalizing attributes
+	# print('Attributes:{}'.format(attributes))
+	print('Normalizing attributes')
+	with tf.Session() as sess:
+		attr_sum_root = sess.run(tf.sqrt(tf.reduce_sum(tf.square(attributes), reduction_indices=1)))  # [50,]
+		for i in range(attributes.shape[0]):
+			attributes[i] = tf.divide(attributes[i], attr_sum_root[i])
+		# print(sess.run(tf.sqrt(tf.reduce_sum(tf.square(attributes), reduction_indices=1))))
+	print('Normalizing Done')
+	# print('Normalized Attriutes:{}'.format(attributes))
+
 	train_x = list([])
 	test_x = list([])
 	train_y = list([])
@@ -65,7 +76,8 @@ def main(_):
 	w1 = weight_variable([n_input, n_hidden1])
 	b1 = bias_variable([n_hidden1])
 
-	out_hidden1 = tf.nn.relu(tf.matmul(input_placeholder, w1) + b1)
+	# out_hidden1 = tf.nn.relu(tf.matmul(input_placeholder, w1) + b1)
+	out_hidden1 = tf.matmul(input_placeholder, w1) + b1         # for linear transformation
 
 	# output layer
 	w_out = weight_variable([n_hidden1, n_output])
