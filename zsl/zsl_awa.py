@@ -5,7 +5,7 @@ import time
 from datahelpers import datahelpers
 import matplotlib.pyplot as plt
 
-n_iteration = 20000
+n_iteration = 10000
 batch_size = 100
 n_hidden1 = 1024
 n_output = 300
@@ -69,35 +69,33 @@ def main(_):
 
 	# Hidden layer 1
 	print('Model addition to graph')
-	w1 = weight_variable([n_input, n_output])
-	b1 = bias_variable([n_output])
+	w1 = weight_variable([n_input, n_hidden1])
+	b1 = bias_variable([n_hidden1])
 
 	# out_hidden1 = tf.nn.relu(tf.matmul(input_placeholder, w1) + b1)
-	#out_hidden1 = tf.matmul(input_placeholder, w1) + b1         # for linear transformation
-	output = tf.matmul(input_placeholder, w1) + b1
+	out_hidden1 = tf.matmul(input_placeholder, w1) + b1         # for linear transformation
 
 	# output layer
-	#w_out = weight_variable([n_hidden1, n_output])
-	#b_out = bias_variable([n_output])
+	w_out = weight_variable([n_hidden1, n_output])
+	b_out = bias_variable([n_output])
 
-	#output = tf.matmul(out_hidden1, w_out) + b_out  # prediction or vector repr in embedding 
+	output = tf.matmul(out_hidden1, w_out) + b_out  # prediction or vector repr in embedding 
 																# space [batch_size, 300]
 	#output = tf.nn.softmax(logits=h, dim=1)
 	print('Model addition done')
 
-	'''
-	# L2 loss implemented
-	loss = tf.reduce_mean((output - attr_placeholder)*(output - attr_placeholder))
-	'''
 	print('Loss function addition to graph')
+
+	'''
 	# Hinge loss implementation
 	matrix = tf.matmul(output,tf.transpose(attr_placeholder))   # [batch_size, batch_size]
 
 	generate_exp = tf.add(hinge_margin, [[(-1*matrix[i][i] + matrix[i][j]) for j in range(batch_size) if j!=i]
 											for i in range(batch_size)])         # [batch_size, batch_size-1]
-	#loss = tf.reduce_sum(tf.maximum(zero, generate_exp), reduction_indices = 1)
+	'''
 	with tf.name_scope('Loss'):
-		loss = tf.reduce_sum(tf.maximum(zero, generate_exp))
+		loss = tf.reduce_mean((output - attr_placeholder)*(output - attr_placeholder))  # L2 loss implemented
+		# loss = tf.reduce_sum(tf.maximum(zero, generate_exp))   # for hinge loss
 		tf.summary.scalar('Loss/Cost', loss)
 
 	print('Loss function added to the tensorflow graph')
@@ -132,8 +130,8 @@ def main(_):
 			if (k+1) not in test_class:
 				train_class_attr.append(attributes[k])
 		train_class_attr = np.array(train_class_attr)
-		#attr = tf.cast(tf.negative(lst), tf.float32)   # for squared loss
-		attr = tf.cast(tf.transpose(train_class_attr), tf.float32)   # for hinge loss [300, 40]
+		attr = tf.cast(tf.negative(train_class_attr), tf.float32)   # for squared loss  [40, 300]
+		#attr = tf.cast(tf.transpose(train_class_attr), tf.float32)   # for hinge loss [300, 40]
 
 		x_axis = []
 		y_axis = []
@@ -150,34 +148,28 @@ def main(_):
 				})
 			train_writer.add_summary(summary, i)
 
-			if i%101 == 0 and i!=0:    # 101 has no relation to batch_size
-				'''
+			if i%100 == 0 and i!=0:    # 101 has no relation to batch_size
 				# for squared loss
 				temp_list = list([])    # temp_list will store the predicted class of the [batch_size] inputs
-				batch_prediction = sess.run(output, feed_dict={
-					input_placeholder:train_batch_x
-					})
+				output_norm = tf.nn.l2_normalize(sess.run(output,feed_dict={
+					input_placeholder:train_batch_x}), dim=1)
+
 				for j in range(batch_size):
 					print('Inside for loop:'+str(j))
 
-					prediction = tf.constant(batch_prediction[j])   # [300,]
-					prediction = tf.reshape(prediction, [1, 300])
+					prediction = tf.reshape(output_norm[j], [1,300])   # [300,]
 
-					# temp_list is going wrong here
 					temp_list.append(tf.argmin(tf.sqrt(tf.reduce_sum(tf.square(tf.add(prediction, 
 						attr)), reduction_indices=1))))
-				'''
 
-				# output is coming different from batch_prediction
+				'''
 				# for hinge loss
-				output_norm = tf.nn.l2_normalize(sess.run(output,feed_dict={
-					input_placeholder:train_batch_x}), dim=1)
 				#input2 = tf.nn.l2_normalize(attr, dim=0)
 				# Using cosine similarity between the predicted embedding vector and the embeding vector of 
 				# the 40 seen classes
 				z = sess.run(tf.matmul(output_norm, attr))   # [100, 40]
 				temp_list = tf.argmax(z, axis=1)
-
+				'''
 				temp_list = np.array(sess.run(temp_list, feed_dict={
 					input_placeholder:train_batch_x
 					}))
@@ -198,6 +190,32 @@ def main(_):
 				input_placeholder:train_batch_x,
 				attr_placeholder: train_batch_attr
 				}))
+
+		# Finding the learned model accuracy on entire training dataset
+		temp_list = list([])    # temp_list will store the predicted class of the [batch_size] inputs
+		output_norm = tf.nn.l2_normalize(sess.run(output,feed_dict={
+				input_placeholder:train_x}), dim=1)
+
+		for j in range(n_trainingExamples):
+			print('Inside for loop:'+str(j))
+
+			prediction = tf.reshape(output_norm[j], [1,300])   # [300,]
+
+			temp_list.append(tf.argmin(tf.sqrt(tf.reduce_sum(tf.square(tf.add(prediction, 
+					attr)), reduction_indices=1))))
+		temp_list = np.array(sess.run(temp_list, feed_dict={
+			input_placeholder:train_batch_x
+			}))
+
+		final_accuracy, summary = sess.run([accuracy, merged], feed_dict={
+			input_placeholder:train_x,
+			label_placeholder:train_y,
+			attr_placeholder:attributes[train_y-1],
+			minNNindex:temp_list
+			})
+		print('\nFinal Training Accuracy on all images:{}'.format(final_accuracy))
+
+		# Plotting the loss function
 		x_axis = np.array(range(n_iteration))
 		y_axis = np.array(y_axis)
 
