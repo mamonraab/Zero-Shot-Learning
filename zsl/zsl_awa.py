@@ -5,7 +5,7 @@ import time
 from datahelpers import datahelpers
 import matplotlib.pyplot as plt
 
-n_iteration = 1000
+n_iteration = 20000
 batch_size = 100
 n_hidden1 = 1024
 n_output = 300
@@ -69,17 +69,18 @@ def main(_):
 
 	# Hidden layer 1
 	print('Model addition to graph')
-	w1 = weight_variable([n_input, n_hidden1])
-	b1 = bias_variable([n_hidden1])
+	w1 = weight_variable([n_input, n_output])
+	b1 = bias_variable([n_output])
 
 	# out_hidden1 = tf.nn.relu(tf.matmul(input_placeholder, w1) + b1)
-	out_hidden1 = tf.matmul(input_placeholder, w1) + b1         # for linear transformation
+	#out_hidden1 = tf.matmul(input_placeholder, w1) + b1         # for linear transformation
+	output = tf.matmul(input_placeholder, w1) + b1
 
 	# output layer
-	w_out = weight_variable([n_hidden1, n_output])
-	b_out = bias_variable([n_output])
+	#w_out = weight_variable([n_hidden1, n_output])
+	#b_out = bias_variable([n_output])
 
-	output = tf.matmul(out_hidden1, w_out) + b_out  # prediction or vector repr in embedding 
+	#output = tf.matmul(out_hidden1, w_out) + b_out  # prediction or vector repr in embedding 
 																# space [batch_size, 300]
 	#output = tf.nn.softmax(logits=h, dim=1)
 	print('Model addition done')
@@ -111,7 +112,7 @@ def main(_):
 		attributes = sess.run(tf.nn.l2_normalize(attributes, dim=1))
 		'''
 		with tf.Session() as sess:
-			attr_sum_root = sess.run(tf.sqrt(tf.reduce_sum(tf.square(attributes), reduction_indices=1)))  # [50,]
+			attr_sum_root = sess.run(tf.sqrt(tf.reduce_sum(tf.square(attributes),reduction_indices=1))) # [50,]
 			for i in range(attributes.shape[0]):
 				attributes[i] = tf.divide(attributes[i], attr_sum_root[i])
 			print(sess.run(tf.sqrt(tf.reduce_sum(tf.square(attributes), reduction_indices=1))))
@@ -204,7 +205,7 @@ def main(_):
 		plt.legend()
 		plt.show()
 	end_time = time.time()
-	print('Training Time:{}'.format((end_time - start_time)/60.0))
+	print('Training Time:{} mins'.format((end_time - start_time)/60.0))
 
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser()
