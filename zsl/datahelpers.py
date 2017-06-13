@@ -31,5 +31,15 @@ def getData(mat, field):
 	else:
 		return None
 
+def getAttributes():
+	attributes = list([])
+	path = 'predicate-matrix-continuous.txt'
+	with open(path) as file:
+		for line in file:
+			lst = line.split()
+			attributes.append(lst)
+	attributes = np.array(attributes, dtype=np.float32)
+	return attributes
+
 if __name__ == '__main__':
 	datahelpers()

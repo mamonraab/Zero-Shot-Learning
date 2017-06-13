@@ -5,10 +5,9 @@ import time
 from datahelpers import datahelpers, getAttributes
 import matplotlib.pyplot as plt
 import random
-from svmClassifier import train_svm_classifier
 
-n_iteration = 6000
-batch_size = 100
+n_iteration = 3000
+batch_size = 200
 n_hidden1 = 1024
 n_output = 85
 learning_rate = 1e-3
@@ -29,8 +28,9 @@ def bias_variable(shape, value=0.5):
 def main(_):
 	print('Loading Data')
 	dataset = datahelpers()
-	attributes = getAttributes()          # [50, 85]   attributes[i][j]={0,1}
+	attributes = getAttributes()          # [50, 85]
 	print('Data loaded into dataset')
+
 
 	n_class = dataset['NUMBER_OF_CLASSES']
 	test_class = dataset['defaultTestClassLabels']
@@ -64,6 +64,12 @@ def main(_):
 	n_trainingExamples = train_x.shape[0]   # 24295
 	n_testExamples = test_x.shape[0]        # ~6180
 	n_input = train_x.shape[1]              # 4096
+
+	class_dict = {}
+	for label in train_class:
+		class_dict[label] = 0
+	for ex in range(n_trainingExamples):
+		class_dict[train_y[ex]] += 1
 
 	print('Placeholders declaration')
 	input_placeholder = tf.placeholder(tf.float32, shape=[None,n_input], name='deepFeatures') #[batch_size,4096]
@@ -122,6 +128,12 @@ def main(_):
 		sess.run(tf.global_variables_initializer())
 		saver = tf.train.Saver()
 
+		# attribute scaling along the row to make the mean to zero
+		for k in range(n_class):
+			mean = np.mean(attributes[k])
+			stddev = np.std(attributes[k],axis=0)
+			attributes[k] = (attributes[k]-mean)/stddev
+
 		# for taking into consideration only the 40 seen classes during training
 		'''
 		train_class_attr = list([])
@@ -148,7 +160,18 @@ def main(_):
 			#i = 0
 			#while True:
 			# an array of length batch_size from [0,trainingExamples-1]
-			indices = random.sample(xrange(n_trainingExamples), batch_size)   # unique random numbers
+			#indices = random.sample(xrange(n_trainingExamples), batch_size)   # unique random numbers
+			train_class_len = len(train_class)
+			sample_per_class = batch_size/train_class_len
+			indices = list([])
+			start_idx = 0
+			end_idx = 0
+			for label in train_class:
+				end_idx = start_idx + class_dict[label]
+				indices.extend(random.sample(range(start_idx, end_idx), sample_per_class))
+				start_idx = end_idx
+			random.shuffle(indices)
+			#print(len(indices))
 
 			train_batch_x = train_x[indices]             # [batch_size, 4096]
 			train_batch_y = train_y[indices]              # [batch_size]
@@ -198,7 +221,7 @@ def main(_):
 					minNNindex:pred_result
 					})
 
-				print ('Step:{}, Training Accuracy:{}'.format(i, train_accuracy))
+				print ('Step:{}, Training Accuracy:{} %'.format(i, train_accuracy*100))
 
 			loss_val = sess.run(loss, feed_dict={
 				input_placeholder:train_batch_x,
@@ -243,7 +266,7 @@ def main(_):
 			attr_placeholder:attributes[train_y-1],
 			minNNindex:pred_result
 			})
-		print('\nFinal Training Accuracy on all images:{}'.format(final_accuracy))
+		print('\nFinal Training Accuracy on all images:{} %'.format(final_accuracy*100))
 		end_time = time.time()
 		print('Training Ended with training time:{} mins\n'.format((end_time - start_time)/60.0))
 

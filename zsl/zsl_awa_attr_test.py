@@ -37,6 +37,12 @@ if __name__ == '__main__':
 
 	n_testExamples = test_x.shape[0]        # ~6180
 	with tf.Session() as sess:
+		# attribute scaling along the row to make the mean to zero
+		for k in range(n_class):
+			mean = np.mean(attributes[k])
+			stddev = np.std(attributes[k])
+			attributes[k] = (attributes[k]-mean)/stddev
+
 		# for squared loss  [10, 300]
 		test_class_attr = tf.cast(tf.negative(attributes[test_class-1]), tf.float32)
 		saver = tf.train.import_meta_graph('zsl-awa-attr-model.meta')
