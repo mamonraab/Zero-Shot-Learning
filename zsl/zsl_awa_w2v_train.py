@@ -179,6 +179,7 @@ def main(_):
 				end_idx = start_idx + class_dict[label]
 				indices.extend(random.sample(range(start_idx, end_idx), sample_per_class))
 				start_idx = end_idx
+			random.shuffle(indices)
 
 			train_batch_x = train_x[indices]             # [batch_size, 4096]
 			train_batch_y = train_y[indices]              # [batch_size]
@@ -227,7 +228,7 @@ def main(_):
 					})
 				#test_writer.add_summary(summary, i)
 
-				print ('Step:{}, Training Accuracy:{}'.format(i, train_accuracy))
+				print ('Step:{}, Training Accuracy:{} %'.format(i, train_accuracy*100))
 
 			loss_val = sess.run(loss, feed_dict={
 				input_placeholder:train_batch_x,
@@ -271,7 +272,7 @@ def main(_):
 			attr_placeholder:attributes[train_y-1],
 			minNNindex:pred_result
 			})
-		print('\nFinal Training Accuracy on all images:{}'.format(final_accuracy))
+		print('\nFinal Training Accuracy on all images:{} %'.format(final_accuracy*100))
 		end_time = time.time()
 		print('Training Ended with training time:{} mins\n'.format((end_time - start_time)/60.0))
 
